@@ -1,39 +1,62 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta charset="UTF-8">
+  <title>Prueba QR</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Registro de asistentes</title>
-
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"> </script>
-
-<style> body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; text-align: center; } h1 { font-size: 24px; margin-bottom: 10px; } #estado { margin: 15px 0; font-size: 18px; font-weight: bold; } #reader { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 10px; } #resultado { max-width: 500px; margin: 20px auto; padding: 20px; background: white; border-radius: 12px; display: none; } #nombre { font-size: 24px; font-weight: bold; margin-bottom: 10px; } #hora { font-size: 20px; } .exito { color: #16803c; } .error { color: #b42318; } </style>
-
+  <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 
 <body>
 
-<h1>Registro de asistentes</h1>
+  <h1>Prueba del lector QR</h1>
 
-<div id="estado"> Cargando lector QR... </div>
+  <div id="estado">Paso 1: HTML cargado</div>
 
-<div id="reader"></div>
+  <div id="reader"></div>
 
-<div id="resultado">
+  <script>
+    const estado = document.getElementById("estado");
 
-<div id="nombre"></div>
+    estado.textContent = "Paso 2: JavaScript funcionando";
 
-<div id="hora"></div>
+    setTimeout(function() {
 
-</div>
+      if (typeof Html5QrcodeScanner === "undefined") {
 
-<script> let procesando = false; const estado = document.getElementById('estado'); const nombreElemento = document.getElementById('nombre'); const horaElemento = document.getElementById('hora'); const resultado = document.getElementById('resultado'); /* * Comprueba que la librería QR * realmente esté disponible. */ if (typeof Html5QrcodeScanner === 'undefined') { estado.textContent = '❌ No se pudo cargar el lector QR'; } else { estado.textContent = '✓ Lector QR cargado. Iniciando cámara...'; } /* * Mostrar registro exitoso */ function mostrarExito(datos) { estado.textContent = '✓ Registro exitoso'; estado.className = 'exito'; nombreElemento.textContent = datos.nombre; horaElemento.textContent = datos.fecha + ' — ' + datos.hora; resultado.style.display = 'block'; if (navigator.vibrate) { navigator.vibrate(150); } reproducirSonido(); setTimeout(function() { resultado.style.display = 'none'; estado.textContent = 'Listo para escanear'; estado.className = ''; procesando = false; }, 1500); } /* * Mostrar error */ function mostrarError(mensaje) { estado.textContent = '⚠ ' + mensaje; estado.className = 'error'; procesando = false; } /* * Sonido */ function reproducirSonido() { try { const contexto = new ( window.AudioContext || window.webkitAudioContext )(); const oscilador = contexto.createOscillator(); const ganancia = contexto.createGain(); oscilador.frequency.value = 880; ganancia.gain.value = 0.08; oscilador.connect( ganancia ); ganancia.connect( contexto.destination ); oscilador.start(); oscilador.stop( contexto.currentTime + 0.12 ); } catch (e) { console.log( 'No se pudo reproducir sonido.' ); } } /* * Enviar nombre a Google Apps Script */ function registrarEnGoogleSheets(nombre) { estado.textContent = 'Enviando a Google...'; const callbackName = 'respuestaQR_' + Date.now(); const script = document.createElement('script'); /* * Respuesta de Google Apps Script */ window[callbackName] = function(datos) { console.log( 'Respuesta recibida:', datos ); if (datos && datos.ok) { mostrarExito(datos); } else { mostrarError( datos && datos.error ? datos.error : 'Google no confirmó el registro.' ); } delete window[callbackName]; script.remove(); }; /* * Error de conexión */ script.onerror = function() { mostrarError( 'No se pudo conectar con Google Apps Script.' ); delete window[callbackName]; script.remove(); }; /* * URL de tu Web App */ script.src = 'https://script.google.com/macros/s/AKfycbyds2CgLNBSW8ig6g2rV27U5bTlJlzYg3jGTCsDa0FQmy4eGslFZEsXOSOe_yEydrZ5/exec' + '?nombre=' + encodeURIComponent(nombre) + '&callback=' + encodeURIComponent(callbackName); document.body.appendChild(script); } /* * QR detectado */ function onScanSuccess(decodedText) { if (procesando) { return; } procesando = true; estado.textContent = 'QR detectado. Registrando...'; registrarEnGoogleSheets( decodedText ); } /* * Errores normales del lector */ function onScanFailure(error) { // No hacemos nada. } /* * Iniciar lector */ if (typeof Html5QrcodeScanner !== 'undefined') { const scanner = new Html5QrcodeScanner( 'reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false ); scanner.render( onScanSuccess, onScanFailure ); } </script>
+        estado.textContent =
+          "❌ Paso 3: html5-qrcode NO cargó";
+
+      } else {
+
+        estado.textContent =
+          "✅ Paso 3: html5-qrcode cargó correctamente";
+
+        const scanner = new Html5QrcodeScanner(
+          "reader",
+          {
+            fps: 10,
+            qrbox: {
+              width: 250,
+              height: 250
+            }
+          },
+          false
+        );
+
+        scanner.render(
+          function(decodedText) {
+            estado.textContent =
+              "QR detectado: " + decodedText;
+          },
+          function(error) {}
+        );
+      }
+
+    }, 1000);
+  </script>
 
 </body>
-
 </html>
