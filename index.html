@@ -28,6 +28,52 @@
 
 </div>
 
-<script> let procesando = false; const estado = document.getElementById('estado'); const nombreElemento = document.getElementById('nombre'); const horaElemento = document.getElementById('hora'); const resultado = document.getElementById('resultado'); /* * Muestra un registro exitoso */ function mostrarExito(datos) { estado.textContent = '✓ Registro exitoso'; estado.className = 'exito'; nombreElemento.textContent = datos.nombre; horaElemento.textContent = datos.fecha + ' — ' + datos.hora; resultado.style.display = 'block'; // Vibración if (navigator.vibrate) { navigator.vibrate(150); } // Sonido reproducirSonido(); // Preparar siguiente QR setTimeout(() => { resultado.style.display = 'none'; estado.textContent = 'Listo para escanear'; estado.className = ''; procesando = false; }, 1200); } /* * Muestra un error */ function mostrarError(mensaje) { estado.textContent = '⚠ ' + mensaje; estado.className = 'error'; procesando = false; } /* * Sonido de confirmación */ function reproducirSonido() { try { const contexto = new ( window.AudioContext || window.webkitAudioContext )(); const oscilador = contexto.createOscillator(); const ganancia = contexto.createGain(); oscilador.frequency.value = 880; ganancia.gain.value = 0.08; oscilador.connect( ganancia ); ganancia.connect( contexto.destination ); oscilador.start(); oscilador.stop( contexto.currentTime + 0.12 ); } catch (e) { // El navegador no permite sonido. } } /* * Envía el nombre a Google Apps Script * * Utilizamos JSONP porque esta página * está alojada en GitHub Pages y el * servidor está en Google Apps Script. */ function registrarEnGoogleSheets(nombre) { const callbackName = 'respuestaQR_' + Date.now(); // Función que recibirá la respuesta window[callbackName] = function(datos) { if (datos.ok) { mostrarExito(datos); } else { mostrarError( datos.error || 'No se pudo registrar.' ); } delete window[callbackName]; script.remove(); }; const script = document.createElement('script'); script.src = 'https://script.google.com/macros/s/AKfycbyds2CgLNBSW8ig6g2rV27U5bTlJlzYg3jGTCsDa0FQmy4eGslFZEsXOSOe_yEydrZ5/exec' + '?nombre=' + encodeURIComponent(nombre) + '&callback=' + callbackName; script.onerror = function() { mostrarError( 'No se pudo conectar con Google Apps Script.' ); delete window[callbackName]; script.remove(); }; document.body.appendChild(script); } /* * Cuando se detecta un QR */ function onScanSuccess(decodedText) { if (procesando) { return; } procesando = true; estado.textContent = 'Registrando...'; estado.className = ''; registrarEnGoogleSheets( decodedText ); } /* * Errores normales del escáner. * * No mostramos nada porque ocurren * continuamente mientras busca un QR. */ function onScanFailure(error) { // No hacemos nada. } /* * Inicializar lector QR */ const scanner = new Html5QrcodeScanner( 'reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false ); scanner.render( onScanSuccess, onScanFailure ); estado.textContent = 'Listo para escanear'; </script>
+<script>
 
+  const estado = document.getElementById('estado');
+
+  estado.textContent = 'Cargando lector QR...';
+
+  if (typeof Html5QrcodeScanner === 'undefined') {
+
+    estado.textContent =
+      '❌ No se pudo cargar el lector QR';
+
+  } else {
+
+    estado.textContent =
+      '✓ Lector QR cargado. Iniciando cámara...';
+
+    const scanner =
+      new Html5QrcodeScanner(
+        'reader',
+        {
+          fps: 10,
+          qrbox: {
+            width: 250,
+            height: 250
+          }
+        },
+        false
+      );
+
+    scanner.render(
+
+      function(decodedText) {
+
+        estado.textContent =
+          'QR detectado: ' + decodedText;
+
+      },
+
+      function(error) {
+
+        // No hacemos nada
+      }
+
+    );
+
+  }
+
+</script>
 </body> </html>
